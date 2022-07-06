@@ -1,0 +1,18 @@
+Package: DeltaGMM
+Type: Package
+Title: Detecting Differential Protein Interactions with Gaussian Mixture Models
+Version: 0.1.0
+Authors@R: c(
+  person("Charley", "Cai", email = "caic@student.ubc.ca",
+         role = c("aut", "cre")),
+  person("Michael", "Skinnider", email = "michael.skinnider@msl.ubc.ca",
+         role = c("aut")),
+  person("R. Greg", "Stacey", email = "richard.greg.stacey@msl.ubc.ca",
+         role = c("aut")),
+  person("Leonard", "Foster", email = "foster@msl.ubc.ca",
+         role = c("aut", "led")))
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: GPL-3
+Encoding: UTF-8
+RoxygenNote: 7.2.0
