@@ -1,0 +1,1 @@
+#' Fits a Gaussian Mixture Model to chromatograms from with [nls()]
