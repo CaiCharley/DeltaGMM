@@ -23,7 +23,7 @@
 #'
 #' @return A named list of proteins with scores.
 #'
-#' @import progress
+#' @import progress doParallel
 #'
 #' @export
 deltaGMM <- function(condition1,
@@ -72,18 +72,7 @@ deltaGMM <- function(condition1,
 
   # TODO: Parallelize fit and scoring
 
-  # setup progress bar
-  pb <- progress_bar$new(
-    format = "fitting :what [:bar] :percent eta: :eta",
-    clear = FALSE, total = length(proteins), width = 80)
-  max_len <- max(nchar(proteins))
-
-  update_pb <- function(protein) {
-    pb$tick(tokens = list(what = sprintf(paste0("%-", max_len, "s"), protein)))
-  }
-
-  protein_fits <- lapply(proteins, function(protein) {
-    update_pb(protein)
+  fit_and_score <- function(protein) {
     raw1 <- DeltaGMM::collect_replicates(protein, condition1)
     raw2 <- DeltaGMM::collect_replicates(protein, condition2)
 
@@ -94,24 +83,22 @@ deltaGMM <- function(condition1,
 
     lapply(to_fit, DeltaGMM::fit_protein,
            imputectrl = imputectrl, gmmctrl = gmmctrl)
-  })
+  }
 
-  # # parallelization
-  # if (parallel) {
-  #   cores <- parallel::detectCores()
-  #   if (.Platform$OS.type == "windows") {
-  #     cl <- parallel::makeCluster(cores)
-  #   } else {
-  #     cl <- parallel::makeForkCluster(cores)
-  #   }
-  #   doParallel::registerDoParallel(cl)
-  # } else {
-  #   foreach::registerDoSEQ()
-  # }
-  # protein_fits <- foreach::foreach() %dopar% {
-  #
-  # }
-  # parallel::stopCluster(cl)
+  # parallelization
+  cl_option <- NULL
+  if (parallel) {
+    cl_option <- parallel::detectCores()
+    if (.Platform$OS.type == "windows") {
+      cl_option <- parallel::makeCluster(cl_option)
+    }
+  }
+
+  protein_fits <- pbapply::pblapply(proteins, fit_and_score, cl = cl_option)
+
+  if (parallel && .Platform$OS.type == "windows") {
+    parallel::stopCluster(cl_option)
+  }
 
   return(protein_fits)
 }
