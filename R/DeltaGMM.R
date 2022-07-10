@@ -105,9 +105,10 @@ deltaGMM <- function(condition1,
 
 # Pulls a protein's chromatograms across replicates into as rows in a single
 # matrix
+# TODO: add doc
 collect_replicates <- function(protein, replicates) {
   combine <- lapply(replicates, function(x) {
-    ifelse(any(rownames(x) == protein), return(x[protein,]), return(NULL))
+    return(ifelse(any(rownames(x) == protein), x[protein,], NULL))
   })
   return(purrr::reduce(combine, rbind))
 }

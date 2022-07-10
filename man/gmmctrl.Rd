@@ -13,7 +13,8 @@ gmmctrl(
   height_max = 1.1,
   variance_min = 2,
   variance_max = 0,
-  rssweights = TRUE
+  rssweights = TRUE,
+  return_fit = FALSE
 )
 }
 \arguments{
@@ -39,7 +40,10 @@ which gaussians with larger heights will be filtered out. Defaults to 1.5.}
 \item{variance_max}{Maximum variance for fitted gaussians. \code{0} sets maximum
 variance to half the fractions (default).}
 
-\item{rssweights}{alculate RSS with imputed values adjusted by their weight.}
+\item{rssweights}{Calculate RSS with imputed values adjusted by their weight.}
+
+\item{return_fit}{Returns the fitted model from \code{\link[=nls]{nls()}}. Useful for
+exporatory analysis. Defaults to \code{FALSE}.}
 }
 \value{
 An named list of class \code{gmmctrl} with specified parameters

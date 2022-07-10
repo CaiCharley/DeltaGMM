@@ -68,7 +68,9 @@ imputectrl <- function(imputation = c("dynamic", "fill_gaps",
 #' @param variance_min Minimum variance for fitted gaussians. Defaults to 1.
 #' @param variance_max Maximum variance for fitted gaussians. `0` sets maximum
 #'  variance to half the fractions (default).
-#' @param rssweights alculate RSS with imputed values adjusted by their weight.
+#' @param rssweights Calculate RSS with imputed values adjusted by their weight.
+#' @param return_fit Returns the fitted model from [nls()]. Useful for
+#' exporatory analysis. Defaults to `FALSE`.
 #'
 #' @return An named list of class `gmmctrl` with specified parameters
 #'
@@ -81,7 +83,8 @@ gmmctrl <- function(max_gaussians = 5,
                     height_max = 1.1,
                     variance_min = 2,
                     variance_max = 0,
-                    rssweights = TRUE) {
+                    rssweights = TRUE,
+                    return_fit = FALSE) {
   init_method <- match.arg(init_method)
 
   if (max_gaussians < 1)
@@ -94,7 +97,7 @@ gmmctrl <- function(max_gaussians = 5,
     stop("min and max height must be greater than 0 and max > min")
   if (variance_min < 0 ||
     variance_max < 0 ||
-    (variance_max !=0 && variance_min >= variance_max))
+    (variance_max != 0 && variance_min >= variance_max))
     stop("min and max variance must be greater than 0 and max > min")
 
   control <- list(max_gaussians = max_gaussians,
@@ -105,7 +108,8 @@ gmmctrl <- function(max_gaussians = 5,
                   height_max = height_max,
                   variance_min = variance_min,
                   variance_max = variance_max,
-                  rssweights = rssweights)
+                  rssweights = rssweights,
+                  return_fit = return_fit)
   class(control) <- "gmmctrl"
   return(control)
 }
