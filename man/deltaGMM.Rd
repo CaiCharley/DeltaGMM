@@ -8,8 +8,8 @@ deltaGMM(
   condition1,
   condition2,
   score = c("fstat", "manhattan"),
-  imputectrl = imputectrl(),
-  gmmctrl = gmmctrl(),
+  imputectrl = setimputectrl(),
+  gmmctrl = setgmmctrl(),
   parallel = TRUE
 )
 }
@@ -23,11 +23,11 @@ used.}
 \item{score}{The scoring metric to use. Defaults to \code{"fstat"}.}
 
 \item{imputectrl}{An optional named list of class "imputectrl" of parameters
-for imputation. See \code{\link[=imputectrl]{imputectrl()}} for names of settable control values and
+for imputation. See \code{\link[=setimputectrl]{setimputectrl()}} for names of settable control values and
 their effects.}
 
 \item{gmmctrl}{An optional named list of class "gmmctrl" of parameters
-for imputation. See \code{\link[=gmmctrl]{gmmctrl()}} for names of settable control values and
+for imputation. See \code{\link[=setgmmctrl]{setgmmctrl()}} for names of settable control values and
 their effects.}
 
 \item{parallel}{Use multiple cores for fitting.}

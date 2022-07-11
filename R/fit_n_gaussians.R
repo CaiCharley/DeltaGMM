@@ -7,13 +7,15 @@
 #' @inheritParams fit_protein
 #' @param n_gaussians The number of gaussian components to fit.
 #'
+#' @import stats
+#'
 #' @returns A fitted model of the chromatograms with various details
 #'
 #' @export
 fit_n_gaussians <- function(chromatograms,
                             n_gaussians,
-                            imputectrl = imputectrl(),
-                            gmmctrl = gmmctrl()) {
+                            imputectrl = setimputectrl(),
+                            gmmctrl = setgmmctrl()) {
   # parse args
   if (!is.matrix(chromatograms) && !is.vector(chromatograms)) {
     stop("chromatograms must be matrix or single vector")
@@ -40,10 +42,7 @@ fit_n_gaussians <- function(chromatograms,
   )
 
   # create smoothed average of both conditions to build initial conditions
-  # TODO: Can we put in imputed values and replace with simpler smoother?
-  smoothed_profile <- PrInCE::clean_profile(
-    colMeans(chromatograms, na.rm = T), noise_floor = 0
-  )
+  smoothed_profile <- smooth_chromatogram(colMeans(chromatograms, na.rm = T))
 
   # set max and min values for model.
   # (A) is proportional to highest fraction.
@@ -59,12 +58,15 @@ fit_n_gaussians <- function(chromatograms,
   bestRSS <- Inf
   bestFit <- NULL
   for (i in seq(gmmctrl$iterations)) {
-    # TODO: Replace with fixed version
+
     # make initial conditions with condition average
+    # TODO: Move making starting params out of loop, just add noise in loop or
+    # using "random"
     initial_conditions <-
       start_params(smoothed_profile, n_gaussians, gmmctrl$method)
 
     # trim initial conditions within bounds of min and max values
+    # TODO: Move into start_params()?
     initial_conditions <-
       purrr::pmap(list(initial_conditions, min_values, max_values),
                   function(parameter_list, minimum, maximum) {
@@ -99,7 +101,7 @@ fit_n_gaussians <- function(chromatograms,
       next
 
     # TODO: account for imputed NAs in RSS, resid doesn't account weights, will this affect aic?
-    if (rssweights == T) {
+    if (gmmctrl$rssweights == T) {
       RSS <- sum((resid(fit) * weights)^2, na.rm = T)
     } else {
       RSS <- sum((resid(fit))^2, na.rm = T)
@@ -118,7 +120,7 @@ fit_n_gaussians <- function(chromatograms,
   res <- list(RSS = bestRSS,
               weights = weights,
               n_gaussians = n_gaussians,
-              chromatograms = nrow(raws))
+              chromatograms = nrow(chromatograms))
 
   if (gmmctrl$return_fit)
     return(c(bestFit, res))

@@ -9,8 +9,8 @@
 #'  and sets a fixed weight based on `na_weights`.
 #'
 #'  * `"fill_gaps"`: Used with `max_dist` argument. Sets missing values that are
-#'  great than `max_dist` from the nearest quantified fraction to 0 and leaves
-#'  closer missing values as NA. This was the first method of imputation
+#'  greater or equal to`max_dist` from the nearest quantified fraction to 0 and
+#'  leaves closer missing values as NA. This was the first method of imputation
 #'  developed to make sure nls doesn't fit gaussians to large gaps without
 #'  penalization.
 #'
@@ -26,12 +26,12 @@
 #' @return An named list of class `imputectrl` with specified parameters
 #'
 #' @export
-imputectrl <- function(imputation = c("dynamic", "fill_gaps",
-                                      "weights", "none"),
-                       max_dist = 3,
-                       na_weight = 0.1,
-                       log_k = 1.5,
-                       log_x = 4) {
+setimputectrl <- function(imputation = c("dynamic", "fill_gaps",
+                                         "weights", "none"),
+                          max_dist = 3,
+                          na_weight = 0.1,
+                          log_k = 1.5,
+                          log_x = 4) {
   imputation <- match.arg(imputation)
 
   if (max_dist < 0)
@@ -75,16 +75,16 @@ imputectrl <- function(imputation = c("dynamic", "fill_gaps",
 #' @return An named list of class `gmmctrl` with specified parameters
 #'
 #' @export
-gmmctrl <- function(max_gaussians = 5,
-                    criterion_fn = "AICc",
-                    max_iterations = 5,
-                    init_method = c("guess", "random"),
-                    height_min = 0.1,
-                    height_max = 1.1,
-                    variance_min = 2,
-                    variance_max = 0,
-                    rssweights = TRUE,
-                    return_fit = FALSE) {
+setgmmctrl <- function(max_gaussians = 5,
+                       criterion_fn = "AICc",
+                       max_iterations = 5,
+                       init_method = c("guess", "random"),
+                       height_min = 0.1,
+                       height_max = 1.1,
+                       variance_min = 2,
+                       variance_max = 0,
+                       rssweights = TRUE,
+                       return_fit = FALSE) {
   init_method <- match.arg(init_method)
 
   if (max_gaussians < 1)

@@ -14,29 +14,27 @@
 #'
 #' @param score The scoring metric to use. Defaults to `"fstat"`.
 #' @param imputectrl An optional named list of class "imputectrl" of parameters
-#'  for imputation. See [imputectrl()] for names of settable control values and
+#'  for imputation. See [setimputectrl()] for names of settable control values and
 #'  their effects.
 #' @param gmmctrl An optional named list of class "gmmctrl" of parameters
-#'  for imputation. See [gmmctrl()] for names of settable control values and
+#'  for imputation. See [setgmmctrl()] for names of settable control values and
 #'  their effects.
 #' @param parallel Use multiple cores for fitting.
 #'
 #' @return A named list of proteins with scores.
 #'
-#' @import progress doParallel
-#'
 #' @export
 deltaGMM <- function(condition1,
                      condition2,
                      score = c("fstat", "manhattan"),
-                     imputectrl = imputectrl(),
-                     gmmctrl = gmmctrl(),
+                     imputectrl = setimputectrl(),
+                     gmmctrl = setgmmctrl(),
                      parallel = TRUE) {
   # parse arguments
   score <- match.arg(score)
-  if (!(class(imputectrl) == "imputectrl"))
+  if (!inherits(imputectrl, "imputectrl"))
     stop("controls is not a imputectrl object - see help(\"imputectrl\")")
-  if (!(class(gmmctrl) == "gmmctrl"))
+  if (!inherits(gmmctrl, "gmmctrl"))
     stop("controls is not a gmmctrl object - see help(\"gmmctrl\")")
 
   # convert conditions to list of matricies
@@ -67,11 +65,7 @@ deltaGMM <- function(condition1,
   # - Set missing values to NA
   # - Use PrInCE::clean_profile() ?
 
-
-  # TODO: Imputation Steps
-
   # TODO: Parallelize fit and scoring
-
   fit_and_score <- function(protein) {
     raw1 <- DeltaGMM::collect_replicates(protein, condition1)
     raw2 <- DeltaGMM::collect_replicates(protein, condition2)
@@ -103,12 +97,16 @@ deltaGMM <- function(condition1,
   return(protein_fits)
 }
 
-# Pulls a protein's chromatograms across replicates into as rows in a single
-# matrix
-# TODO: add doc
+#' Pull protein's chromatograms across replicates into matrix
+#'
+#' @param protein The protein name as it appears in the rowname of `replicates`
+#' @param replicates A list of matrices representing replicates with protein
+#' names as rownames and fractions as columns.
+#'
+#' @return A matrix with the each replicate of the protein in rows
 collect_replicates <- function(protein, replicates) {
-  combine <- lapply(replicates, function(x) {
-    return(ifelse(any(rownames(x) == protein), x[protein,], NULL))
+  combine <- lapply(replicates, function(rep) {
+    rep[rownames(rep) == protein]
   })
   return(purrr::reduce(combine, rbind))
 }

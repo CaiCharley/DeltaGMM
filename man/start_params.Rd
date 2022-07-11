@@ -7,7 +7,7 @@
 start_params(
   chromatogram,
   n_gaussians,
-  method = c("guess", "random"),
+  gmmctrl = setgmmctrl(),
   sigma_default = 2
 )
 }
@@ -16,7 +16,11 @@ start_params(
 
 \item{n_gaussians}{The number of gaussian parameters to output}
 
-\item{method}{One of "guess" or "random"}
+\item{gmmctrl}{An optional named list of class "gmmctrl" of parameters
+for imputation. See \code{\link[=setgmmctrl]{setgmmctrl()}} for names of settable control values and
+their effects.}
+
+\item{sigma_default}{The default mean initial value of sigma}
 }
 \value{
 A named list containing \code{A}, \code{mu}, \code{sigma} each with length of

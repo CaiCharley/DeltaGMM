@@ -14,8 +14,8 @@
 #'
 #' @export
 fit_protein <- function(chromatograms,
-                        imputectrl = imputectrl(),
-                        gmmctrl = gmmctrl()) {
+                        imputectrl = setimputectrl(),
+                        gmmctrl = setgmmctrl()) {
   # parse args
   if (!is.matrix(chromatograms) && !is.vector(chromatograms)) {
     stop("chromatograms must be matrix or single vector")

@@ -10,9 +10,13 @@
 #' number within +/- 0.5 of two for both modes; this is based on our manual 
 #' inspection of a large number of chromatograms.
 #' Derived from PrInCE's `make_initial_conditions`
+#'
 #' @param chromatogram A numeric vector of a smoothed protein chromatogram
 #' @param n_gaussians The number of gaussian parameters to output
-#' @param method One of "guess" or "random"
+#' @param sigma_default The default mean initial value of sigma
+#' @inheritParams fit_n_gaussians
+#'
+#' @importFrom dplyr first nth last
 #'
 #' @returns A named list containing `A`, `mu`, `sigma` each with length of
 #' `n_gaussians`
@@ -20,14 +24,12 @@
 #' @export
 start_params <- function(chromatogram,
                          n_gaussians,
-                         method = c("guess", "random"),
+                         gmmctrl = setgmmctrl(),
                          sigma_default = 2) {
-  method <- match.arg(method)
-
   minHeight <- min(chromatogram)
   maxHeight <- max(chromatogram)
   fractions <- length(chromatogram)
-  if (method == "guess") {
+  if (gmmctrl$init_method == "guess") {
     peaksX <- which(diff(sign(diff(chromatogram))) == -2) + 1
     if (first(chromatogram) > nth(chromatogram, 2))
       peaksX <- c(1, peaksX)
@@ -45,12 +47,40 @@ start_params <- function(chromatogram,
     }
     A[is.na(A)] <- runif(sum(is.na(A)), min = minHeight, max = maxHeight)
     mu[is.na(mu)] <- runif(sum(is.na(mu)), min = 1, max = fractions)
-  } else if (method == "random") {
+  } else if (gmmctrl$init_method == "random") {
     A <- runif(n_gaussians, min = minHeight, max = maxHeight)
     mu <- runif(n_gaussians, min = 1, max = fractions)
     sigma <- sigma_default + runif(n_gaussians) - 0.5
   }
   return(list(A = A, mu = mu, sigma = sigma))
 }
+
+smooth_chromatogram <- function(chromatogram,
+                                impute_NA = FALSE,
+                                smooth_width = 4) {
+  # Benchmark to see if performace matters
+  # impute neighbours
+  if (impute_NA) {
+    fractions <- length(chromatogram)
+    for (i in which(is.na(chromatogram))) {
+      prevIdx <- i - 1
+      nextIdx <- i + 1
+      if (prevIdx < 1 | nextIdx > fractions - 1) next
+      neighbors <- c(chromatogram[prevIdx], chromatogram[nextIdx])
+      if (!any(is.na(neighbors))) {
+        chromatogram[i] <- mean(neighbors)
+      }
+    }
+  }
+
+  chromatogram[is.na(chromatogram)] <- 0
+
+  smooth_input <- c(rep(0, smooth_width), chromatogram, rep(0, smooth_width))
+  smoothed <- forecast::ma(smooth_input, smooth_width)
+  smoothed <- smoothed[(smooth_width + 1):(length(smoothed) - smooth_width)]
+
+  return(smoothed)
+}
+
 
 

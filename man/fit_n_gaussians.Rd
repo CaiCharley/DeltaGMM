@@ -7,8 +7,8 @@
 fit_n_gaussians(
   chromatograms,
   n_gaussians,
-  imputectrl = imputectrl(),
-  gmmctrl = gmmctrl()
+  imputectrl = setimputectrl(),
+  gmmctrl = setgmmctrl()
 )
 }
 \arguments{
@@ -19,11 +19,11 @@ coerced to a matrix with one row.}
 \item{n_gaussians}{The number of gaussian components to fit.}
 
 \item{imputectrl}{An optional named list of class "imputectrl" of parameters
-for imputation. See \code{\link[=imputectrl]{imputectrl()}} for names of settable control values and
+for imputation. See \code{\link[=setimputectrl]{setimputectrl()}} for names of settable control values and
 their effects.}
 
 \item{gmmctrl}{An optional named list of class "gmmctrl" of parameters
-for imputation. See \code{\link[=gmmctrl]{gmmctrl()}} for names of settable control values and
+for imputation. See \code{\link[=setgmmctrl]{setgmmctrl()}} for names of settable control values and
 their effects.}
 }
 \value{

@@ -4,7 +4,11 @@
 \alias{fit_protein}
 \title{Fits a Gaussian Mixture model to protein chromatograms}
 \usage{
-fit_protein(chromatograms, imputectrl = imputectrl(), gmmctrl = gmmctrl())
+fit_protein(
+  chromatograms,
+  imputectrl = setimputectrl(),
+  gmmctrl = setgmmctrl()
+)
 }
 \arguments{
 \item{chromatograms}{A matrix of raw chromatograms in rows (replicates)
@@ -12,11 +16,11 @@ and fractions in columns to fit gaussians to. A single numeric vector will be
 coerced to a matrix with one row.}
 
 \item{imputectrl}{An optional named list of class "imputectrl" of parameters
-for imputation. See \code{\link[=imputectrl]{imputectrl()}} for names of settable control values and
+for imputation. See \code{\link[=setimputectrl]{setimputectrl()}} for names of settable control values and
 their effects.}
 
 \item{gmmctrl}{An optional named list of class "gmmctrl" of parameters
-for imputation. See \code{\link[=gmmctrl]{gmmctrl()}} for names of settable control values and
+for imputation. See \code{\link[=setgmmctrl]{setgmmctrl()}} for names of settable control values and
 their effects.}
 }
 \value{
