@@ -15,6 +15,111 @@ unstim <- as.matrix(readRDS("../Rproject/data/craig/craig_ifnunstim.rds")[[1]])
 ```{r }
 load_all()
 
-fits <- deltaGMM(stim, unstim, parallel = F)
+fits_guess <- deltaGMM(stim, unstim, parallel = F)
+fit_random <- deltaGMM(stim, unstim, gmmctrl = setgmmctrl(init_method = "random"), parallel = F)
+saveRDS(fits_guess, "./debug/fit_guess.rds")
+saveRDS(fit_random, "./debug/fit_random.rds")
+```
+```{r}
+extracted_rss <- map2(fits_guess, fit_random, function(guess, random) {
+  tibble(guess_1 = guess[[1]]$RSS_list,
+         guess_2 = guess[[2]]$RSS_list,
+         guess_null = guess[[3]]$RSS_list,
+         random_1 = random[[1]]$RSS_list,
+         random_2 = random[[2]]$RSS_list,
+         random_null = random[[3]]$RSS_list)
+})
+
+extracted_rss_weighted <- map2(fits_guess, fit_random, function(guess, random) {
+  tibble(guess_1 = guess[[1]]$RSS_weighted_list,
+         guess_2 = guess[[2]]$RSS_weighted_list,
+         guess_null = guess[[3]]$RSS_weighted_list,
+         random_1 = random[[1]]$RSS_weighted_list,
+         random_2 = random[[2]]$RSS_weighted_list,
+         random_null = random[[3]]$RSS_weighted_list)
+})
+names(extracted_rss) <- names(fits_guess)
+names(extracted_rss_weighted) <- names(fits_guess)
+saveRDS(extracted_rss, "./debug/rss.rds")
+```
+```{r}
+fits_guess_old <- deltaGMM(stim, unstim, parallel = F)
+```
+```{r}
+rss_var <- map(extracted_rss, ~summarise_if(.x, is.numeric, ~sd(.x, na.rm = T))) %>%
+  reduce(rbind)
+rownames(rss_var) <- names(extracted_rss)
+saveRDS(rss_var, "./debug/rss_var.rds")
+
+rss_nas <- map(extracted_rss, ~summarise_if(.x, is.numeric, ~sum(is.na(.x)))) %>%
+  reduce(rbind)
+rownames(rss_nas) <- names(extracted_rss)
+saveRDS(rss_nas, "./debug/rss_count_nas.rds")
+
+```
+
+```{r}
+Rprof()
+"old_gmm" = deltaGMM(stim[1:20,], unstim[1:20,], parallel = F)
+Rprof(NULL)
+
+```
+```{r}
+o14 <- collect_replicates("O14879", rbind(list(unstim), list(unstim), list(unstim)))
+o14[is.na(o14)] <- 0
+o14_start <- smooth_chromatogram(colSums(o14))
+init <- start_params(o14_start, 5)
+
+A <- init$A
+mu <- init$mu
+sigma <- init$sigma
+gmm_model <- function(x, n, A, mu, sigma) {
+  rowSums(sapply(seq_len(n),
+                 function(i) A[i] * exp(-((x - mu[i]) / sigma[i])^2)))
+}
+
+gmm_model(rep(seq_len(60)), 5, A, mu, sigma)
+```
+```{r}
+gmm_model <- function(x, n, A, mu, sigma) {
+  rowSums(sapply(seq_len(n),
+                 function(i) A[i] * exp(-((x - mu[i]) / sigma[i])^2)))
+}
+
+gmm_model_vapply <- function(x, n, A, mu, sigma) {
+  rowSums(vapply(seq_len(n),
+                 function(i) A[i] * exp(-((x - mu[i]) / sigma[i])^2), numeric(60)))
+}
+
+gmm_model_matrix <- function(x, n, A, mu, sigma) {
+  colSums(
+    A * exp(-(((matrix(rep(x, each = n), nrow = n) - mu) / sigma)^2))
+  )
+}
+
+gmm_model_matrix_fast <- function(x, n, A, mu, sigma) {
+  colsums(
+    A * exp(-(((matrix(rep(x, each = n), nrow = n) - mu) / sigma)^2))
+  )
+}
+xt <- matrix(rep(1:60, each = 5), nrow = 5)
+
+tmp <- function(x, n) {
+  colsums(
+    A * exp(-(((matrix(rep(x, each = n), nrow = n) - mu) / sigma)^2))
+  )
+}
+my_check <- function(values) {
+  all(sapply(values[-1], function(x) identical(values[[1]], x)))
+}
+
+fractions <- rep(seq_len(60))
+microbenchmark(
+  "original" = { b <- gmm_model(fractions, 5, A, mu, sigma) },
+  "vapply" = { b <- gmm_model_vapply(fractions, 5, A, mu, sigma) },
+  "matrix" = { b <- gmm_model_matrix(fractions, 5, A, mu, sigma) },
+  "matrixf" = { b <- gmm_model_matrix_fast(fractions, 5, A, mu, sigma) },
+  "tmp" = { b <- tmp(fractions, 5) },
+  times = 10000)
 ```
 
