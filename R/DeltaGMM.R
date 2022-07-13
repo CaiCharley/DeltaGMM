@@ -51,7 +51,7 @@ deltaGMM <- function(condition1,
   }
 
   # check all replicates have same number of fractions
-  if (length(unique(sapply(c(condition1, condition2), ncol)) != 1)) {
+  if (length(unique(sapply(c(condition1, condition2), ncol))) != 1) {
     stop("Replicates must have matching number of fractions")
   }
 
@@ -67,8 +67,8 @@ deltaGMM <- function(condition1,
 
   # TODO: Parallelize fit and scoring
   fit_and_score <- function(protein) {
-    raw1 <- DeltaGMM::collect_replicates(protein, condition1)
-    raw2 <- DeltaGMM::collect_replicates(protein, condition2)
+    raw1 <- collect_replicates(protein, condition1)
+    raw2 <- collect_replicates(protein, condition2)
 
     # fit each condition individually and both simultanously
     to_fit <- list(raw1_model = raw1,
@@ -82,7 +82,7 @@ deltaGMM <- function(condition1,
   # parallelization
   cl_option <- NULL
   if (parallel) {
-    cl_option <- parallel::detectCores()
+    cl_option <- parallel::detectCores() - 4
     if (.Platform$OS.type == "windows") {
       cl_option <- parallel::makeCluster(cl_option)
     }

@@ -1,0 +1,20 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+The code chunk appears:
+```{r setup}
+setwd("C:\\Users\\Charley\\OneDrive\\git\\CPSC_448\\DeltaGMM")
+library(devtools)
+build()
+install()
+
+stim <- as.matrix(readRDS("../Rproject/data/craig/craig_ifnstim.rds")[[1]])
+unstim <- as.matrix(readRDS("../Rproject/data/craig/craig_ifnunstim.rds")[[1]])
+```
+```{r }
+load_all()
+
+fits <- deltaGMM(stim, unstim, parallel = F)
+```
+

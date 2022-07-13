@@ -12,10 +12,10 @@
 #' @returns A fitted model of the chromatograms with various details
 #'
 #' @export
-fit_n_gaussians <- function(chromatograms,
-                            n_gaussians,
-                            imputectrl = setimputectrl(),
-                            gmmctrl = setgmmctrl()) {
+test_fit_n_gaussians <- function(chromatograms,
+                                 n_gaussians,
+                                 imputectrl = setimputectrl(),
+                                 gmmctrl = setgmmctrl()) {
   # parse args
   if (!is.matrix(chromatograms) && !is.vector(chromatograms)) {
     stop("chromatograms must be matrix or single vector")
@@ -55,6 +55,8 @@ fit_n_gaussians <- function(chromatograms,
                   mu = max(which(!is.na(chromatograms), arr.ind = T)[, 2]),
                   sigma = gmmctrl$variance_max)
 
+  RSSs <- vector("numeric", gmmctrl$max_iterations)
+  RSSs_weighted <- vector("numeric", gmmctrl$max_iterations)
   bestRSS <- Inf
   bestFit <- NULL
   for (i in seq(gmmctrl$max_iterations)) {
@@ -97,8 +99,11 @@ fit_n_gaussians <- function(chromatograms,
     }, simpleError = function(e) {
       e
     })
-    if ("error" %in% class(fit))
+    if ("error" %in% class(fit)) {
+      RSSs[i] <- NA
+      RSSs_weighted[i] <- NA
       next
+    }
 
     # TODO: account for imputed NAs in RSS, resid doesn't account weights, will this affect aic?
     if (gmmctrl$rssweights == T) {
@@ -106,6 +111,10 @@ fit_n_gaussians <- function(chromatograms,
     } else {
       RSS <- sum((resid(fit))^2, na.rm = T)
     }
+
+    RSSs[i] <- sum((resid(fit))^2, na.rm = T)
+    RSSs_weighted[i] <- sum((resid(fit) * weights)^2, na.rm = T)
+
     # replace best fit with this model?
     if (RSS < bestRSS) {
       bestRSS <- RSS
@@ -120,7 +129,9 @@ fit_n_gaussians <- function(chromatograms,
   res <- list(RSS = bestRSS,
               weights = weights,
               n_gaussians = n_gaussians,
-              chromatograms = nrow(chromatograms))
+              chromatograms = nrow(chromatograms),
+              RSS_list = RSSs,
+              RSS_weighted_list = RSSs_weighted)
 
   if (gmmctrl$return_fit)
     return(c(bestFit, res))

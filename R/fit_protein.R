@@ -28,15 +28,17 @@ fit_protein <- function(chromatograms,
 
   # don't fit mixtures with more parameters than (experimental) points
   if (!is.null(quantified_fractions)) {
-    max_gaussians <- min(max_gaussians, floor(quantified_fractions / 3))
+    imputectrl$max_gaussians <-
+      min(imputectrl$max_gaussians, floor(quantified_fractions / 3))
   }
 
   # fit models
   fits <- lapply(seq_len(gmmctrl$max_gaussians), function(n) {
-    DeltaGMM::fit_n_gaussians(chromatograms,
-                              n_gaussian = n,
-                              imputectrl = imputectrl,
-                              gmmctrl = gmmctrl)
+    # TODO: revert to normal fit_n_gaussians()
+    test_fit_n_gaussians(chromatograms,
+                         n_gaussian = n,
+                         imputectrl = imputectrl,
+                         gmmctrl = gmmctrl)
   })
 
   # choose model
