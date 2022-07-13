@@ -139,9 +139,3 @@ test_fit_n_gaussians <- function(chromatograms,
   else
     return(res)
 }
-
-# gaussian mixture model
-gmm_model <- function(x, n, A, mu, sigma) {
-  rowSums(sapply(seq_len(n),
-                 function(i) A[i] * exp(-((x - mu[i]) / sigma[i])^2)))
-}

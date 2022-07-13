@@ -55,6 +55,7 @@ start_params <- function(chromatogram,
   return(list(A = A, mu = mu, sigma = sigma))
 }
 
+#' @export
 smooth_chromatogram <- function(chromatogram,
                                 impute_NA = FALSE,
                                 smooth_width = 4) {

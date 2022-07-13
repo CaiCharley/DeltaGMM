@@ -89,6 +89,7 @@ deltaGMM <- function(condition1,
   }
 
   protein_fits <- pbapply::pblapply(proteins, fit_and_score, cl = cl_option)
+  names(protein_fits) <- proteins
 
   if (parallel && .Platform$OS.type == "windows") {
     parallel::stopCluster(cl_option)
