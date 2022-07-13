@@ -125,11 +125,12 @@ test_fit_n_gaussians <- function(chromatograms,
   # return bestFit if fitted, otherwise return null
   if (is.null(bestFit)) return(NULL)
 
-  # TODO: add criterion, coefs, df.residual
+  # TODO: add criterion, coefs, df.residual, fix hardcoded AIC
   res <- list(RSS = bestRSS,
               weights = weights,
               n_gaussians = n_gaussians,
               chromatograms = nrow(chromatograms),
+              criterion = AIC(bestFit),
               RSS_list = RSSs,
               RSS_weighted_list = RSSs_weighted)
 
