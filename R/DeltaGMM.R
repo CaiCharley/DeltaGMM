@@ -105,6 +105,8 @@ deltaGMM <- function(condition1,
 #' names as rownames and fractions as columns.
 #'
 #' @return A matrix with the each replicate of the protein in rows
+#'
+#' @export
 collect_replicates <- function(protein, replicates) {
   combine <- lapply(replicates, function(rep) {
     rep[rownames(rep) == protein]

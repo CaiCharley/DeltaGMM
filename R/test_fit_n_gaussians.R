@@ -81,10 +81,12 @@ test_fit_n_gaussians <- function(chromatograms,
     mu <- initial_conditions$mu
     sigma <- initial_conditions$sigma
 
+    len <- length(chromatograms)
+
     # fit the model
     fit <- tryCatch({
       suppressWarnings(
-        nls(value ~ gmm_model(fraction, n_gaussians, A, mu, sigma),
+        nls(value ~ gmm_model(fraction, n_gaussians, len, A, mu, sigma),
             data = tidy_chromatograms,
             start = list(A = A, mu = mu, sigma = sigma),
             algorithm = "port",
@@ -129,13 +131,14 @@ test_fit_n_gaussians <- function(chromatograms,
   res <- list(RSS = bestRSS,
               weights = weights,
               n_gaussians = n_gaussians,
+              fractions = fractions,
               chromatograms = nrow(chromatograms),
               criterion = AIC(bestFit),
               RSS_list = RSSs,
               RSS_weighted_list = RSSs_weighted)
 
   if (gmmctrl$return_fit)
-    return(c(bestFit, res))
-  else
-    return(res)
+    res$fit <- bestFit
+
+  return(res)
 }

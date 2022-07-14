@@ -130,8 +130,9 @@ fit_n_gaussians <- function(chromatograms,
 }
 
 # gaussian mixture model
-gmm_model <- function(x, n, A, mu, sigma) {
-  colSums(
-    A * exp(-(((matrix(rep(x, each = n), nrow = n) - mu) / sigma)^2))
+gmm_model <- function(x, n, m, A, mu, sigma) {
+  .colSums(
+    A * exp(-(((matrix(rep(x, each = n), nrow = n) - mu) / sigma)^2)),
+    n, m
   )
 }
