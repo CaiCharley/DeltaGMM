@@ -19,8 +19,8 @@
 #' @param gmmctrl An optional named list of class "gmmctrl" of parameters
 #'  for imputation. See [setgmmctrl()] for names of settable control values and
 #'  their effects.
-#' @param parallel Use multiple cores for fitting.
-#'
+#' @param ncores Number of cores to use for parallel computation. Default of 1
+#'  specifies serial computation.
 #' @return A named list of proteins with scores.
 #'
 #' @export
@@ -29,7 +29,7 @@ deltaGMM <- function(condition1,
                      score = c("fstat", "manhattan"),
                      imputectrl = setimputectrl(),
                      gmmctrl = setgmmctrl(),
-                     parallel = TRUE) {
+                     ncores = 1) {
   # parse arguments
   score <- match.arg(score)
   if (!inherits(imputectrl, "imputectrl"))
@@ -79,10 +79,10 @@ deltaGMM <- function(condition1,
            imputectrl = imputectrl, gmmctrl = gmmctrl)
   }
 
-  # parallelization
+  # check ncores for parallelization
   cl_option <- NULL
-  if (parallel) {
-    cl_option <- parallel::detectCores() - 4
+  if (ncores > 1) {
+    cl_option <- ncores
     if (.Platform$OS.type == "windows") {
       cl_option <- parallel::makeCluster(cl_option)
     }
@@ -91,7 +91,7 @@ deltaGMM <- function(condition1,
   protein_fits <- pbapply::pblapply(proteins, fit_and_score, cl = cl_option)
   names(protein_fits) <- proteins
 
-  if (parallel && .Platform$OS.type == "windows") {
+  if (ncores > 1 && .Platform$OS.type == "windows") {
     parallel::stopCluster(cl_option)
   }
 

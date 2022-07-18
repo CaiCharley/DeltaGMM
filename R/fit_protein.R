@@ -36,7 +36,7 @@ fit_protein <- function(chromatograms,
   fits <- lapply(seq_len(gmmctrl$max_gaussians), function(n) {
     # TODO: revert to normal fit_n_gaussians()
     test_fit_n_gaussians(chromatograms,
-                         n_gaussian = n,
+                         n_gaussians = n,
                          imputectrl = imputectrl,
                          gmmctrl = gmmctrl)
   })

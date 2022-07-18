@@ -10,7 +10,7 @@ deltaGMM(
   score = c("fstat", "manhattan"),
   imputectrl = setimputectrl(),
   gmmctrl = setgmmctrl(),
-  parallel = TRUE
+  ncores = TRUE
 )
 }
 \arguments{
@@ -30,7 +30,8 @@ their effects.}
 for imputation. See \code{\link[=setgmmctrl]{setgmmctrl()}} for names of settable control values and
 their effects.}
 
-\item{parallel}{Use multiple cores for fitting.}
+\item{ncores}{Number of cores to use for parallel computation. Default of 1
+specifies serial computation}
 }
 \value{
 A named list of proteins with scores.
