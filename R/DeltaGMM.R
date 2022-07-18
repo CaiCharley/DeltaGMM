@@ -62,7 +62,8 @@ deltaGMM <- function(condition1,
   proteins <- intersect(condition1_proteins, condition2_proteins)
 
   # TODO: Proprocessing steps
-  # - Set missing values to NA
+  condition1 <- lapply(condition1, dplyr::na_if, y = 0)
+  condition2 <- lapply(condition2, dplyr::na_if, y = 0)
   # - Use PrInCE::clean_profile() ?
 
   # TODO: Parallelize fit and scoring
