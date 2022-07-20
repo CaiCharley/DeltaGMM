@@ -79,10 +79,12 @@ fit_n_gaussians <- function(chromatograms,
     mu <- initial_conditions$mu
     sigma <- initial_conditions$sigma
 
+    len <- length(chromatograms)
+
     # fit the model
     fit <- tryCatch({
       suppressWarnings(
-        nls(value ~ gmm_model(fraction, n_gaussians, A, mu, sigma),
+        nls(value ~ gmm_model(fraction, n_gaussians, len, A, mu, sigma),
             data = tidy_chromatograms,
             start = list(A = A, mu = mu, sigma = sigma),
             algorithm = "port",
@@ -118,15 +120,16 @@ fit_n_gaussians <- function(chromatograms,
 
   # TODO: add criterion, coefs, df.residual, fix hardcoded AIC
   res <- list(RSS = bestRSS,
+              degFreedom = df.residual(bestFit),
               weights = weights,
               n_gaussians = n_gaussians,
               chromatograms = nrow(chromatograms),
               criterion = AIC(bestFit))
 
   if (gmmctrl$return_fit)
-    return(c(bestFit, res))
-  else
-    return(res)
+    res$fit <- bestFit
+
+  return(res)
 }
 
 # gaussian mixture model

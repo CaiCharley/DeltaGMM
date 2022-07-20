@@ -129,6 +129,7 @@ test_fit_n_gaussians <- function(chromatograms,
 
   # TODO: add criterion, coefs, df.residual, fix hardcoded AIC
   res <- list(RSS = bestRSS,
+              degFreedom = df.residual(bestFit),
               weights = weights,
               n_gaussians = n_gaussians,
               fractions = fractions,

@@ -76,8 +76,11 @@ deltaGMM <- function(condition1,
                    raw2_model = raw2,
                    null_model = rbind(raw1, raw2))
 
-    lapply(to_fit, DeltaGMM::fit_protein,
-           imputectrl = imputectrl, gmmctrl = gmmctrl)
+    fitted <- lapply(to_fit, DeltaGMM::fit_protein,
+                     imputectrl = imputectrl, gmmctrl = gmmctrl)
+    score <- score_protein(fitted)
+
+    return(list(score = score, fit = fitted))
   }
 
   # check ncores for parallelization
@@ -89,14 +92,14 @@ deltaGMM <- function(condition1,
     }
   }
 
-  protein_fits <- pbapply::pblapply(proteins, fit_and_score, cl = cl_option)
-  names(protein_fits) <- proteins
+  results <- pbapply::pblapply(proteins, fit_and_score, cl = cl_option)
+  names(results) <- proteins
 
   if (ncores > 1 && .Platform$OS.type == "windows") {
     parallel::stopCluster(cl_option)
   }
 
-  return(protein_fits)
+  return(results)
 }
 
 #' Pull protein's chromatograms across replicates into matrix
