@@ -76,7 +76,7 @@ setimputectrl <- function(imputation = c("dynamic", "fill_gaps",
 #'
 #' @export
 setgmmctrl <- function(max_gaussians = 5,
-                       criterion_fn = "AICc",
+                       criterion_fn = AICc,
                        max_iterations = 5,
                        init_method = c("guess", "random"),
                        height_min = 0.1,
