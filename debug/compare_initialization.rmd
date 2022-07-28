@@ -1,0 +1,117 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r setup}
+setwd("C:\\Users\\Charley\\OneDrive\\git\\CPSC_448\\DeltaGMM")
+library(devtools)
+library(tidyverse)
+build()
+install()
+```
+```{r read_LFQ}
+get_LFQ_chroms = function(fn) {
+  if (grepl("csv", fn)) readfn = read_csv
+  if (grepl("txt", fn) |
+    grepl("tab", fn) |
+    grepl("tsv", fn)) readfn = read_tsv
+  chroms = as.data.frame(readfn(fn))
+  chroms = chroms[!grepl("__", chroms[, 1]),]
+
+  # remove replicate column if needed
+  i.rep = which(tolower(names(chroms)) %in% "replicate")
+  if (length(i.rep) > 0) {
+    if (length(unique(chroms[, i.rep])) > 1) {
+      stop("this function can't handle multiple replicates.")
+    }
+    print(paste0(fn, " has a replicate column. Removing it..."))
+    chroms = chroms[, -i.rep]
+  }
+
+  # remove badly formatted columns
+  i.char = which(unlist(lapply(chroms, is.character)))
+  i.char = i.char[!i.char == 1]
+  if (length(i.char) > 0) {
+    print(paste0(fn, " has a bad column. Removing it..."))
+    chroms = chroms[, -i.char]
+  }
+
+  prots = chroms[, 1]
+  prots = unlist(sapply(strsplit(prots, ";"), "[", 1))
+  chroms = as.matrix(chroms[, 2:ncol(chroms)])
+  rownames(chroms) = prots
+  return(chroms)
+}
+
+lfq_stim <- get_LFQ_chroms("./debug/LFQ_rnase.tsv")
+lfq_unstim <- get_LFQ_chroms("./debug/LFQ_ctrl.tsv")
+```
+```{r}
+extract_rss <- function(fits) {
+  map(fits, function(prot) {
+    tibble(
+      random_1 = prot[[1]]$RSS_list,
+      random_2 = prot[[2]]$RSS_list,
+      random_null = prot[[3]]$RSS_list)
+  })
+}
+
+lfq_random_fits <- deltaGMM(lfq_stim, lfq_unstim, gmmctrl = setgmmctrl(max_iterations = 10, init_method = "random", return_fit = T))
+write_rds(lfq_random_fits, "./debug/lfq_10_random_fits.rds")
+lfq_random_rss <- extract_rss(lfq_random_fits)
+write_rds(lfq_random_rss, "./debug/lfq_10_random_rss.rds")
+
+lfq_guess_fits <- deltaGMM(lfq_stim, lfq_unstim, gmmctrl = setgmmctrl(max_iterations = 10, init_method = "guess", return_fit = T))
+write_rds(lfq_guess_fits, "./debug/lfq_10_guess_fits.rds")
+lfq_guess_rss <- extract_rss(lfq_guess_fits)
+write_rds(lfq_guess_rss, "./debug/lfq_10_guess_rss.rds")
+```
+```{r}
+best_score_by_iteration <- function(guess, random) {
+  prots <- intersect(names(random), names(guess))
+  guess <- guess[prots]
+  random <- random[prots]
+
+  baseline <- do.call(rbind, map(random, ~apply(.x, 2, min, na.rm = T)))
+  results <- list()
+  for (protein in prots) {
+    rss_tbl <- as.matrix(guess[[protein]])
+    rss_tbl[is.na(rss_tbl)] <- Inf
+
+    if (length(rss_tbl) == 0)
+      next
+
+    iters <- nrow(rss_tbl)
+    models <- ncol(rss_tbl)
+
+    cummins <- apply(rss_tbl, 2, cummin)
+
+    tryCatch({
+      df <- data.frame(protein = protein,
+                       model = rep(colnames(rss_tbl), each = iters),
+                       iteration = rep(seq_len(iters), times = models),
+                       score = as.vector(t(t(cummins) / baseline[protein,])))
+    }, error = function(e) {
+      print(protein)
+    }, warning = function(w) {
+      print(protein)
+    })
+
+    results[[protein]] <- df
+  }
+  results <- do.call(rbind, results)
+  rownames(results) <- NULL
+  results
+}
+
+
+lfq_best_score <- best_score_by_iteration(lfq_guess_rss, lfq_random_rss)
+saveRDS(lfq_best_score,"./debug/lfq_best_score.rds")
+```
+```{r}
+tidy <- mutate(lfq_best_score, fit = paste0(protein, model))
+ggplot(tidy, aes(x = iteration, y = score)) +
+  geom_point(alpha = 0.01) +
+  geom_line(aes(group = fit), alpha = 0.01) +
+  geom_hline(yintercept = 1)
+```

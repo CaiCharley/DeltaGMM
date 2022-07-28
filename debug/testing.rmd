@@ -21,7 +21,7 @@ saveRDS(fits_guess, "./debug/fit_guess.rds")
 saveRDS(fit_random, "./debug/fit_random.rds")
 ```
 ```{r}
-extracted_rss <- map2(fits_guess, fit_random, function(guess, random) {
+extracted_rss <- map3(fits_guess, fit_random, function(guess, random) {
   tibble(guess_1 = guess[[1]]$RSS_list,
          guess_2 = guess[[2]]$RSS_list,
          guess_null = guess[[3]]$RSS_list,
@@ -38,12 +38,25 @@ extracted_rss_weighted <- map2(fits_guess, fit_random, function(guess, random) {
          random_2 = random[[2]]$RSS_weighted_list,
          random_null = random[[3]]$RSS_weighted_list)
 })
+
+old <- map(fit_old, function(old) {
+  tibble(old_1 = old[[1]]$RSS_list,
+         old_2 = old[[2]]$RSS_list,
+         old_null = old[[3]]$RSS_list,)
+})
+joined <- map2(rss, old, function(x, y) {
+  cbind(x, y)
+})
+
 names(extracted_rss) <- names(fits_guess)
 names(extracted_rss_weighted) <- names(fits_guess)
 saveRDS(extracted_rss, "./debug/rss.rds")
 ```
 ```{r}
-fits_guess_old <- deltaGMM(stim, unstim, parallel = F)
+# fits_guess_old <- deltaGMM(stim, lfq_unstim, parallel = F)
+system.time({
+  t_orig <- deltaGMM(stim[1:20, ], unstim[1:20, ], gmmctrl = setgmmctrl(return_fit = T),parallel = F)
+})
 ```
 ```{r}
 rss_var <- map(extracted_rss, ~summarise_if(.x, is.numeric, ~sd(.x, na.rm = T))) %>%
@@ -59,8 +72,8 @@ saveRDS(rss_nas, "./debug/rss_count_nas.rds")
 ```
 
 ```{r}
-Rprof()
-"old_gmm" = deltaGMM(stim[1:20,], unstim[1:20,], parallel = F)
+Rprof(interval = 0.005, memory.profiling = T, gc.profiling = T)
+"old_gmm" = deltaGMM(stim[1:50,], unstim[1:50,], parallel = F)
 Rprof(NULL)
 
 ```
@@ -77,8 +90,6 @@ gmm_model <- function(x, n, A, mu, sigma) {
   rowSums(sapply(seq_len(n),
                  function(i) A[i] * exp(-((x - mu[i]) / sigma[i])^2)))
 }
-
-gmm_model(rep(seq_len(60)), 5, A, mu, sigma)
 ```
 ```{r}
 gmm_model <- function(x, n, A, mu, sigma) {
@@ -102,11 +113,11 @@ gmm_model_matrix_fast <- function(x, n, A, mu, sigma) {
     A * exp(-(((matrix(rep(x, each = n), nrow = n) - mu) / sigma)^2))
   )
 }
-xt <- matrix(rep(1:60, each = 5), nrow = 5)
 
-tmp <- function(x, n) {
-  colsums(
-    A * exp(-(((matrix(rep(x, each = n), nrow = n) - mu) / sigma)^2))
+tmp <- function(x, n, m, A, mu, sigma) {
+  .colSums(
+    A * exp(-(((matrix(rep(x, each = n), nrow = n) - mu) / sigma)^2)),
+    n, m
   )
 }
 my_check <- function(values) {
@@ -114,12 +125,116 @@ my_check <- function(values) {
 }
 
 fractions <- rep(seq_len(60))
+
+```
+```{r}
 microbenchmark(
   "original" = { b <- gmm_model(fractions, 5, A, mu, sigma) },
   "vapply" = { b <- gmm_model_vapply(fractions, 5, A, mu, sigma) },
   "matrix" = { b <- gmm_model_matrix(fractions, 5, A, mu, sigma) },
   "matrixf" = { b <- gmm_model_matrix_fast(fractions, 5, A, mu, sigma) },
-  "tmp" = { b <- tmp(fractions, 5) },
+  "tmp" = { b <- tmp(fractions, 5, dim(mat)[2], A, mu, sigma) },
   times = 10000)
+microbenchmark(
+        "orig" = {b <- ncol(mat)},
+        "dot" = {b <- dim(mat)},
+        times = 10000
+)
 ```
+```{r}
+# finds first index in which it is within tol % of the lowest
+which.min.tol <- function(x, digits = 2) {
+  which.min(round(x, digits))
+}
 
+
+first_min <- reduce(map(rss, ~apply(.x, 2, which.min.tol)), rbind)
+rownames(first_min) <- names(rss)
+```
+```{r}
+first_min_tidy <- pivot_longer(as.tibble(first_min), everything(), names_to = "fit", values_to = "iteration")
+ggplot(first_min_tidy, aes(x = iteration, colour = fit)) +
+        geom_bar(position=position_dodge()) +
+        ggtitle("Which iteration was the best RSS found")
+ggsave("./debug/first_min_rss_bar.png")
+```
+```{r}
+min_rss <- reduce(map(RSS, ~apply(.x, 2, min, na.rm = T)), rbind)
+rownames(min_rss) <- names(RSS)
+```
+```{r}
+print("Condition 1 Fits Summary")
+summary(min_rss[,1])
+summary(min_rss[,4])
+summary(min_rss[,7])
+print("Condition 2 Fits Summary")
+summary(min_rss[,2])
+summary(min_rss[,5])
+summary(min_rss[,8])
+print("Condition Null Fits Summary")
+summary(min_rss[,3])
+summary(min_rss[,6])
+summary(min_rss[,9])
+```
+```{r}
+ggplot(as.data.frame(min_rss), aes(guess_1, old_1)) +
+        geom_point() +
+        lims(x = c(0, 100), y = c(0, 100)) +
+        ggtitle("Best RSS, Condition 1 (Guess vs Old Guess)")
+ggplot(as.data.frame(min_rss), aes(guess_2, old_2)) +
+        geom_point() +
+        lims(x = c(0, 100), y = c(0, 100)) +
+        ggtitle("Best RSS, Condition 2 (Guess vs Old Guess)")
+ggplot(as.data.frame(min_rss), aes(guess_null, old_null)) +
+        geom_point() +
+        lims(x = c(0, 300), y = c(0, 300)) +
+        ggtitle("Best RSS, Null (Guess vs Old Guess)")
+```
+```{r}
+# baseline_10iters = 10 random iterations (list)
+# guess_5iters = 5 guess iterations (list)
+
+# ensure elements baseline_10iters and guess_5fiters are the same proteins
+prots = intersect(names(baseline_10iters), names(guess_5iters))
+baseline_10iters = baseline_10iters[prots]
+guess_5iters = guess_5iters[prots]
+
+# collect iteration and score for each protein and model
+# return this dataframe
+df = data.frame(protein = NA,
+                model = NA,
+                iteration = NA,
+                score = NA)
+for (idx.list in 1:length(prots)) { # protein
+
+  # ensure columns of baseline_10iters and guess_5iters are the same models
+  if (!identical(colnames(baseline_10iters), colnames(guess_5iters))){
+    stop("baseline and guess have different columns. choose models another way than column index")
+  }
+
+  for (idx.column in 1:ncol(guess_5iters[[idx.list]])) { # model
+
+    # baseline rss
+    best_fit_rss = min(baseline_10iters[[idx.list]][, idx.column], na.rm=T)
+
+    # how close to baseline can we get if we stop guessing in iteration N?
+    iters = 1:5
+    stop_early_rss = sapply(iters, function(idx.iter) {
+      min(guess_5iters[[idx.list]][1:idx.iter, idx.column], na.rm=T)
+    }) %>% unlist()
+
+    # define a score at each iteration
+    score = stop_early_rss / best_fit_rss
+
+    # accumulate data
+    df = rbind(df, data.frame(protein = prots[idx.list],
+                              model = colnames(guess_5iters[[idx.list]])[idx.column],
+                              iteration = iters,
+                              score = score))
+  }
+}
+```
+```{r}
+ggplot(df, aes(x = iteration, y = score)) +
+        geom_point()
+```
