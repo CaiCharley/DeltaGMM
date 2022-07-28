@@ -54,6 +54,9 @@ fit_n_gaussians <- function(chromatograms,
   max_values <- c(A = max(chromatograms, na.rm = T) * gmmctrl$height_max,
                   mu = max(which(!is.na(chromatograms), arr.ind = T)[, 2]),
                   sigma = gmmctrl$variance_max)
+# TODO: remove
+  RSSs <- vector("numeric", gmmctrl$max_iterations)
+  RSSs_weighted <- vector("numeric", gmmctrl$max_iterations)
 
   bestRSS <- Inf
   bestFit <- NULL
@@ -99,8 +102,12 @@ fit_n_gaussians <- function(chromatograms,
     }, simpleError = function(e) {
       e
     })
-    if ("error" %in% class(fit))
+    if ("error" %in% class(fit)) {
+      # TODO: remove
+      RSSs[i] <- NA
+      RSSs_weighted[i] <- NA
       next
+    }
 
     # TODO: account for imputed NAs in RSS, resid doesn't account weights, will this affect aic?
     if (gmmctrl$rssweights == T) {
@@ -108,6 +115,11 @@ fit_n_gaussians <- function(chromatograms,
     } else {
       RSS <- sum((resid(fit))^2, na.rm = T)
     }
+
+    # TODO: remove
+    RSSs[i] <- sum((resid(fit))^2, na.rm = T)
+    RSSs_weighted[i] <- sum((resid(fit) * weights)^2, na.rm = T)
+
     # replace best fit with this model?
     if (RSS < bestRSS) {
       bestRSS <- RSS
@@ -123,8 +135,12 @@ fit_n_gaussians <- function(chromatograms,
               degFreedom = df.residual(bestFit),
               weights = weights,
               n_gaussians = n_gaussians,
+              fractions = fractions,
               chromatograms = nrow(chromatograms),
-              criterion = AIC(bestFit))
+              criterion = gmmctrl$criterion_fn(bestFit),
+              coefs = coef(bestFit),
+              RSS_list = RSSs,
+              RSS_weighted_list = RSSs_weighted)
 
   if (gmmctrl$return_fit)
     res$fit <- bestFit
