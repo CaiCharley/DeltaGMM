@@ -28,7 +28,7 @@ fit_protein <- function(chromatograms,
 
   # don't fit mixtures with more parameters than (experimental) points
   if (!is.null(quantified_fractions)) {
-    imputectrl$max_gaussians <-
+    gmmctrl$max_gaussians <-
       min(imputectrl$max_gaussians, floor(quantified_fractions / 3))
   }
 
