@@ -55,6 +55,9 @@ start_params <- function(chromatogram,
   return(list(A = A, mu = mu, sigma = sigma))
 }
 
+#' Smooth chromatogram with moving average and option to impute NAs
+#'
+#' @return Smoothed chromatogram
 #' @export
 smooth_chromatogram <- function(chromatogram,
                                 impute_NA = FALSE,

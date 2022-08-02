@@ -7,7 +7,7 @@
 #' @param fit A list containing two individually fit models and a null fit model
 #' from the output of [fit_protein()]. Models must contain `RSS`, `residual`.
 #'
-#' @returns The protein score
+#' @return The protein score
 #'
 #' @export
 score_protein <- function(fit) {
